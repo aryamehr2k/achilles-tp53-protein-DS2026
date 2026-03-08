@@ -1,0 +1,14 @@
+{
+  "annotations": [
+    {
+      "name": "Example Domain A",
+      "color": "#ff4d4d",
+      "ranges": [[100, 150]]
+    },
+    {
+      "name": "Example Domain B",
+      "color": "#4dd2ff",
+      "ranges": [[200, 230]]
+    }
+  ]
+}

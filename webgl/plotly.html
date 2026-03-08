@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protein Graph — WebGL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="header">
+    <div class="title">Protein Graph — Structure ↔ Embedding (WebGL)</div>
+    <div class="meta" id="meta">loading...</div>
+  </div>
+
+  <div id="controls">
+    <label>View
+      <select id="viewMode">
+        <option value="both">Both</option>
+        <option value="struct">Structure Only</option>
+        <option value="embed">Embedding Only</option>
+      </select>
+    </label>
+    <label>Point Size
+      <input id="pointSize" type="range" min="3" max="16" step="1" value="8" />
+    </label>
+    <label>Edge Opacity
+      <input id="edgeOpacity" type="range" min="0" max="1" step="0.05" value="0.12" />
+    </label>
+    <label><input type="checkbox" id="showEdges" checked /> Show edges</label>
+    <label><input type="checkbox" id="showAnn" checked /> Show annotations</label>
+    <button id="reset">Reset Camera</button>
+    <button id="present">Presentation Mode</button>
+  </div>
+
+  <div id="container">
+    <div class="panel" id="panelStruct">
+      <div class="panel-title">Structure Graph</div>
+      <div id="plotStruct" class="plot"></div>
+    </div>
+    <div class="panel" id="panelEmbed">
+      <div class="panel-title">Embedding Space (PCA‑3D)</div>
+      <div id="plotEmbed" class="plot"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <script type="module" src="plotly.js"></script>
+</body>
+</html>

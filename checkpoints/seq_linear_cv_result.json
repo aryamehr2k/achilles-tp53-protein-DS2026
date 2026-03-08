@@ -1,0 +1,14 @@
+{
+  "model": "delta_esm_mean_ridge",
+  "alpha": 0.01,
+  "mean_spearman": 0.4241935610771179,
+  "std_spearman": 0.02334987372159958,
+  "meta": {
+    "esm_model": "esm2_t6_8M_UR50D",
+    "y_mean": 48.687984466552734,
+    "y_std": 45.763694773183595,
+    "n": 1157,
+    "dim": 320,
+    "seed": 42
+  }
+}

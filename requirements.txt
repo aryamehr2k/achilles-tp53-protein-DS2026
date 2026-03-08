@@ -1,0 +1,8 @@
+torch>=2.1
+numpy
+biopython
+tqdm
+requests
+pandas
+fair-esm
+torch-geometric

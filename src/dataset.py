@@ -8,6 +8,7 @@ from torch_geometric.data import Data
 
 from src.structure import load_ca_coordinates, build_knn_graph, build_chain_graph
 from src.esm_embed import get_esm2_residue_embeddings
+from src.msa_features import load_or_compute_msa_features
 
 
 AA20 = "ACDEFGHIKLMNPQRSTVWY"
@@ -91,7 +92,20 @@ class HyperData(Data):
 
 class TP53StructureDataset(Dataset):
 
-    def __init__(self, csv_path, pdb_path, chain_id="A", k=16, esm_model="esm2_t6_8M_UR50D", graph_type="knn"):
+    def __init__(
+        self,
+        csv_path,
+        pdb_path,
+        chain_id="A",
+        k=16,
+        esm_model="esm2_t6_8M_UR50D",
+        graph_type="knn",
+        msa_path=None,
+        use_entropy=False,
+        use_dca=False,
+        dca_scale=1.0,
+        msa_cache_path="cache/tp53_msa_features.npz",
+    ):
         super().__init__()
 
         df = pd.read_csv(csv_path)
@@ -121,11 +135,34 @@ class TP53StructureDataset(Dataset):
         self.X = get_esm2_residue_embeddings(seq, model_name=esm_model)
         self.X = self.X[:self.N]
 
+        self.entropy = None
+        self.dca_scores = None
+        if msa_path and (use_entropy or use_dca):
+            ent, dca = load_or_compute_msa_features(
+                msa_path=msa_path,
+                pdb_path=pdb_path,
+                chain_id=chain_id,
+                cache_path=msa_cache_path,
+            )
+            if use_entropy:
+                self.entropy = torch.from_numpy(ent).float().view(-1, 1)
+                self.X = torch.cat([self.X, self.entropy], dim=1)
+            if use_dca:
+                self.dca_scores = dca
+
         if graph_type == "chain":
             edge_index_np = build_chain_graph(self.N)
         else:
             edge_index_np = build_knn_graph(coords, k=k)
         self.edge_index = torch.from_numpy(edge_index_np).long()
+
+        self.edge_weight = None
+        if self.dca_scores is not None:
+            edge_weight = []
+            for u, v in edge_index_np.T:
+                score = float(self.dca_scores[int(u), int(v)])
+                edge_weight.append(1.0 + dca_scale * score)
+            self.edge_weight = torch.tensor(edge_weight, dtype=torch.float32)
 
         self.v_idx, self.e_idx, self.num_edges = build_hypergraph_indices(
             self.N, window=2, add_global=True
@@ -174,6 +211,7 @@ class TP53StructureDataset(Dataset):
         data = HyperData(
             x=self.X,
             edge_index=self.edge_index,
+            edge_weight=self.edge_weight,
             y=torch.tensor([y], dtype=torch.float32)
         )
 

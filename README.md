@@ -6,6 +6,7 @@ This project showcases how a **structure‑aware GNN** learns mutation effects i
 - Protein structure → graph (kNN edges from a PDB file).
 - GNN learns structure‑aware representations for mutation prediction.
 - Sequence‑only baselines (ΔESM + MLP, ΔESM + ridge) underperform vs the GNN.
+- **GNN + Entropy + DCA** adds evolutionary signals from a TP53 MSA.
 - A 3D WebGL viewer that visually contrasts structure vs embedding space.
 - **Our Model** score is shown from saved results only (architecture withheld).
 
@@ -15,13 +16,14 @@ This project showcases how a **structure‑aware GNN** learns mutation effects i
 - `train_seq_cv.py` – sequence baseline (ΔESM + MLP)
 - `train_seq_linear_cv.py` – linear baseline (ΔESM + ridge)
 - `train_gnn_cv.py` – GNN baseline (5‑fold CV)
+- `train_gnn_entropy_dca_cv.py` – GNN + Shannon entropy + DCA (5‑fold CV)
 - `export_webgl.py` – export structure + embedding to WebGL
 - `webgl/plotly.html` – browser 3D viewer
 - `src/` – dataset, feature builders, and models
 
 **Setup**
 ```bash
-cd /home/kay/Documents/github/DSClub-Project/protein_hgnn
+cd /home/kay/Documents/github/Data_Science_Club_winter2026
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -34,12 +36,13 @@ Print whatever results are already saved in `checkpoints/`.
 python show_scores.py
 ```
 
-**Full Training (All Baselines + GNN)**
+**Full Training (All Baselines + GNN + Entropy/DCA)**
 Run these in order. The first run builds a ΔESM cache and can take time.
 ```bash
 python train_seq_cv.py
 python train_seq_linear_cv.py
 python train_gnn_cv.py
+python train_gnn_entropy_dca_cv.py
 ```
 
 **Show Scores After Training**
@@ -70,3 +73,4 @@ In the viewer, click **Presentation Mode** to hide controls and auto‑rotate. U
 **Notes**
 - If any line shows `MISSING`, the corresponding JSON in `checkpoints/` has not been generated yet.
 - **Our Model** score is reported from `checkpoints/hypergnn_cv_result.json` without releasing model code.
+- The TP53 MSA used for entropy/DCA is in `data/msa/tp53_alignment.aln`.

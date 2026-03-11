@@ -55,12 +55,13 @@ class HGNN(nn.Module):
     def forward(self, data):
         x = data.x
         edge_index = data.edge_index
+        edge_weight = getattr(data, "edge_weight", None)
         mut_mask = data.mut_mask
         wt_idx = data.wt_idx.view(-1)
         mut_idx = data.mut_idx.view(-1)
 
         # GCN layers
-        x = self.encode(data)
+        x = self.encode(data, edge_weight=edge_weight)
 
         # Pool mutated node
         m = mut_mask.unsqueeze(1)  # [N,1]
@@ -81,14 +82,14 @@ class HGNN(nn.Module):
         out = self.head(feat).squeeze(1)
         return out.squeeze(0)
 
-    def encode(self, data):
+    def encode(self, data, edge_weight=None):
         x = data.x
         edge_index = data.edge_index
 
-        x = self.g1(x, edge_index)
+        x = self.g1(x, edge_index, edge_weight)
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = self.g2(x, edge_index)
+        x = self.g2(x, edge_index, edge_weight)
         x = F.relu(x)
         return x

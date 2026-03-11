@@ -1,0 +1,6 @@
+{
+  "mean_spearman": 0.6403780969943426,
+  "std_spearman": 0.0668602720100667,
+  "dca_scale": 1.0,
+  "msa": "data/msa/tp53_alignment.aln"
+}

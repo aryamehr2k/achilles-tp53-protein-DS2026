@@ -32,9 +32,8 @@ EPOCHS = 120
 LR = 1e-3
 WD = 1e-4
 PATIENCE = 15
-DCA_SCALE = 1.0
 
-OUT_PATH = "checkpoints/gnn_entropy_dca_cv_result.json"
+OUT_PATH = "checkpoints/gnn_entropy_cv_result.json"
 
 
 def evaluate(model, loader):
@@ -92,7 +91,7 @@ def train_one_fold(ds, train_idx, test_idx):
 
 
 def main():
-    print("Loading dataset (kNN edges + entropy + DCA)...")
+    print("Loading dataset (kNN edges + entropy)...")
     ds = TP53StructureDataset(
         CSV_PATH,
         PDB_PATH,
@@ -100,8 +99,7 @@ def main():
         graph_type="knn",
         msa_path=MSA_PATH,
         use_entropy=True,
-        use_dca=True,
-        dca_scale=DCA_SCALE,
+        use_dca=False,
         msa_cache_path="cache/tp53_msa_features.npz",
     )
 
@@ -117,7 +115,7 @@ def main():
     std_sp = float(scores.std())
 
     print("\n==============================")
-    print("GNN + Entropy + DCA 5-Fold CV Result")
+    print("GNN + Entropy 5-Fold CV Result")
     print(f"Mean Spearman: {mean_sp:.4f}")
     print(f"Std  Spearman: {std_sp:.4f}")
     print("==============================")
@@ -128,7 +126,6 @@ def main():
             {
                 "mean_spearman": mean_sp,
                 "std_spearman": std_sp,
-                "dca_scale": DCA_SCALE,
                 "msa": MSA_PATH,
             },
             f,

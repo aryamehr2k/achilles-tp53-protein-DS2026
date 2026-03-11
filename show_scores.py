@@ -8,6 +8,7 @@ DEFAULT_RESULTS = {
     "Sequence ΔESM + MLP": os.path.join(ROOT, "checkpoints", "seq_cv_result.json"),
     "Linear ΔESM (ridge)": os.path.join(ROOT, "checkpoints", "seq_linear_cv_result.json"),
     "GNN (baseline)": os.path.join(ROOT, "checkpoints", "gnn_cv_result.json"),
+    "GNN + Entropy": os.path.join(ROOT, "checkpoints", "gnn_entropy_cv_result.json"),
     "GNN + Entropy + DCA": os.path.join(ROOT, "checkpoints", "gnn_entropy_dca_cv_result.json"),
     "Our Model (details withheld)": os.path.join(ROOT, "checkpoints", "hypergnn_cv_result.json"),
 }

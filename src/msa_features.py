@@ -10,24 +10,63 @@ GAP_INDEX = 20
 
 
 def parse_clustal(path: str):
-    seqs = {}
+    blocks = []
+    current = {}
     with open(path, "r") as f:
-        for line in f:
-            line = line.rstrip("\n")
+        for raw in f:
+            line = raw.rstrip("\n")
             if not line.strip():
+                if current:
+                    blocks.append(current)
+                    current = {}
                 continue
             if line.startswith("CLUSTAL") or line.startswith("MUSCLE"):
                 continue
             if line[0].isspace():
-                # consensus lines are prefixed with spaces
+                # consensus line
                 continue
             parts = line.split()
             if len(parts) < 2:
                 continue
             name, seq = parts[0], parts[1]
-            seqs[name] = seqs.get(name, "") + seq
-    if not seqs:
+            # skip consensus rows like "*" or ":"
+            if set(name) <= set("*:. "):
+                continue
+            current[name] = current.get(name, "") + seq
+
+    if current:
+        blocks.append(current)
+
+    if not blocks:
         raise ValueError(f"No sequences parsed from {path}")
+
+    # Collect all names and block lengths
+    all_names = set()
+    block_lens = []
+    for b in blocks:
+        all_names.update(b.keys())
+        max_len = max(len(s) for s in b.values())
+        block_lens.append(max_len)
+
+    seqs = {name: [] for name in all_names}
+    for b, blen in zip(blocks, block_lens):
+        for name in all_names:
+            seg = b.get(name)
+            if seg is None:
+                seqs[name].append("-" * blen)
+            else:
+                if len(seg) < blen:
+                    seg = seg + ("-" * (blen - len(seg)))
+                seqs[name].append(seg)
+
+    seqs = {k: "".join(v) for k, v in seqs.items()}
+
+    # Final sanity: enforce equal lengths by trimming to min length
+    lengths = [len(s) for s in seqs.values()]
+    min_len = min(lengths)
+    if len(set(lengths)) != 1:
+        seqs = {k: v[:min_len] for k, v in seqs.items()}
+
     return seqs
 
 

@@ -11,7 +11,7 @@ DEFAULT_RESULTS = {
     "GNN + Entropy": os.path.join(ROOT, "checkpoints", "gnn_entropy_cv_result.json"),
     "GNN + Entropy + DCA": os.path.join(ROOT, "checkpoints", "gnn_entropy_dca_cv_result.json"),
     "GNN + NeRF Features": os.path.join(ROOT, "checkpoints", "gnn_nerf_cv_result.json"),
-    "Our Model (details withheld)": os.path.join(ROOT, "checkpoints", "our_model_cv_result.json"),
+    "Enigma model (details withheld)": os.path.join(ROOT, "checkpoints", "enigma_cv_result.json"),
 }
 
 

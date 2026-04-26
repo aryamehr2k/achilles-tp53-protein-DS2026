@@ -4,7 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Protein Graph WebGL Showcase</title>
-  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="style.css?v=11" />
+  <script>
+    (function () {
+      function show(err) {
+        var el = document.getElementById('fatalBanner');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'fatalBanner';
+          el.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:10px 14px;background:#3a0d0d;color:#ffb4b4;font:12px/1.4 ui-monospace,monospace;z-index:99999;white-space:pre-wrap;border-bottom:2px solid #ff5c5c;max-height:40vh;overflow:auto;';
+          (document.body || document.documentElement).appendChild(el);
+        }
+        el.textContent += (el.textContent ? '\n---\n' : '') + 'UI error: ' + (err && (err.stack || err.message) || err);
+      }
+      window.addEventListener('error', function (e) { show(e.error || e.message || e); });
+      window.addEventListener('unhandledrejection', function (e) { show(e.reason); });
+    })();
+  </script>
 </head>
 <body>
   <div id="header">
@@ -99,6 +115,6 @@
     </div>
   </div>
 
-  <script type="module" src="main.js?v=10"></script>
+  <script type="module" src="main.js?v=16"></script>
 </body>
 </html>

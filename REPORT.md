@@ -17,7 +17,7 @@ with experimental fitness scores). We compare several approaches:
 - Structure-aware GNNs that operate on a 3D residue graph built from the
   TP53 PDB structure.
 - Enrichment variants that add MSA-derived entropy / DCA / NeRF features.
-- "Our Model" — architecture intentionally withheld in this repo; only
+- "Enigma model" — architecture intentionally withheld in this repo; only
   the CV result JSON is published.
 
 All models use the **same** frozen ESM-2 features and the **same** 5-fold
@@ -34,7 +34,7 @@ downstream head / graph structure.
 | **GNN + Entropy** | Above + column-wise Shannon entropy of TP53 MSA concatenated as per-residue feature | Same GCN head |
 | **GNN + Entropy + DCA** | Above + mean-field DCA couplings used as edge weights | Same GCN head |
 | **GNN + NeRF** | Above + learned per-residue features from a structural NeRF pass ([nerf/](nerf/)) | Same GCN head |
-| **Our Model (withheld)** | Architecture withheld; CV score reported from saved JSON ([checkpoints/our_model_cv_result.json](checkpoints/our_model_cv_result.json)) | — |
+| **Enigma model (withheld)** | Architecture withheld; CV score reported from saved JSON ([checkpoints/enigma_cv_result.json](checkpoints/enigma_cv_result.json)) | — |
 
 **The ΔESM feature is deliberately weak** — averaging 320-dim vectors over
 ~393 residues dilutes a single-residue mutation into near-noise and
@@ -60,7 +60,7 @@ comparing a fine-tuned ESM against a zero-shot ESM; both are zero-shot
 from ESM's perspective. The comparison isolates the effect of the
 feature representation (mean-pool vs. per-residue + structure).
 
-## 4. Why the GNN beats the ΔESM baselines (and why Our Model is top)
+## 4. Why the GNN beats the ΔESM baselines (and why Enigma model is top)
 
 ### Why structure-aware GNNs beat the ΔESM-mean baselines
 
@@ -78,9 +78,9 @@ Two things, in order of importance:
 Structure on top of that (kNN message-passing over 3D neighbours) is a
 smaller but consistent contribution.
 
-### Why Our Model finishes above every baseline and enrichment variant
+### Why Enigma model finishes above every baseline and enrichment variant
 
-After the fairness fix (§5), Our Model's 0.6220 sits above the GNN
+After the fairness fix (§5), Enigma model's 0.6220 sits above the GNN
 baseline (0.6103), the entropy variant (0.5912), entropy+DCA (0.5856),
 and NeRF (0.5916). All of those numbers are measured on the same 5-fold
 splits over the same MAVE scores, with the same frozen ESM-2 features
@@ -95,16 +95,16 @@ only differences between rows are downstream. Three observations:
   is how the model *routes* information from mutated sites through the
   graph.
 - **The two rows that didn't drop after the fix are the two rows that
-  never peeked.** Ridge is closed-form (no epochs), and Our Model was
+  never peeked.** Ridge is closed-form (no epochs), and Enigma model was
   always using a held-out final evaluation. Every other row lost
   0.03–0.06 ρ when we stopped reporting test-fold peaks.
-- **The ranking is stable, not a narrow win.** Our Model beats the GNN
+- **The ranking is stable, not a narrow win.** Enigma model beats the GNN
   baseline by ~0.012 ρ and the enrichment variants by 0.03–0.036. Each
   row's std is ~0.06–0.08, so the gap vs. a single variant is not
   statistically loud, but it is consistent in *sign* across every
   enrichment variant and it is *the* row that did not regress post-fix.
 
-The novelty claim for "what Our Model does differently" lives in §7 —
+The novelty claim for "what Enigma model does differently" lives in §7 —
 it is intentionally left for the author to describe since the
 architecture itself is withheld from this repo.
 
@@ -133,7 +133,7 @@ Other fairness / overfitting checks:
 - **CV splits are disjoint.** See [src/metrics.py:35-47](src/metrics.py#L35-L47).
 - **MSA entropy / DCA / NeRF features never see fitness scores.** They
   come from a TP53 alignment + 3D coordinates only.
-- **`our_model_cv_result.json` is not re-generated here** — it was
+- **`enigma_cv_result.json` is not re-generated here** — it was
   measured with the same 5-fold + held-out protocol used for every other
   row in this table, and the JSON has not been touched since.
 
@@ -149,7 +149,7 @@ GNN (baseline)                 : 0.6103 ± 0.0674
 GNN + Entropy                  : 0.5912 ± 0.0556
 GNN + Entropy + DCA            : 0.5856 ± 0.0758
 GNN + NeRF Features            : 0.5916 ± 0.0826
-Our Model (withheld)           : 0.6220 ± 0.0552   ← top
+Enigma model (withheld)           : 0.6220 ± 0.0552   ← top
 ```
 
 Pre-fix numbers (for comparison — these are the leaked scores and
@@ -161,24 +161,24 @@ GNN (baseline)                 : 0.6493 ± 0.0639   (had leak)
 GNN + Entropy                  : 0.6400 ± 0.0678   (had leak)
 GNN + Entropy + DCA            : 0.6404 ± 0.0669   (had leak)
 GNN + NeRF Features            : 0.6385 ± 0.0588   (had leak)
-Our Model (withheld)           : 0.6220 ± 0.0552   (same protocol, unchanged)
+Enigma model (withheld)           : 0.6220 ± 0.0552   (same protocol, unchanged)
 ```
 
 Reading the delta:
 - Ridge is literally identical (closed-form, never early-stopped on
   anything).
-- Our Model is unchanged because it was evaluated with the same final
+- Enigma model is unchanged because it was evaluated with the same final
   held-out protocol from the start.
 - Every other row lost 0.03–0.06 ρ — smaller than each row's own std,
   consistent in magnitude and sign, which is the signature of a small
   *symmetric* bias being removed rather than a big methodological bug.
 - The relative ranking flipped at the top: the GNN baseline was
-  previously above Our Model by a leaked 0.03; after the fix Our Model
+  previously above Enigma model by a leaked 0.03; after the fix Enigma model
   sits above every trainable row in our lineup.
 
-## 7. Novelty of "Our Model"
+## 7. Novelty of "Enigma model"
 
-*This section is a placeholder — the source of "Our Model" is
+*This section is a placeholder — the source of "Enigma model" is
 intentionally withheld from this repo, so only the author can describe
 what makes it novel. Fill this in with 1–3 sentences before
 submission.*
@@ -201,7 +201,7 @@ python serve.py
 
 ### Which model is the UI actually using?
 
-Important for the presenter: **the UI does not run Our Model live** —
+Important for the presenter: **the UI does not run Enigma model live** —
 its architecture is withheld and is therefore not hosted. What the UI
 serves for every requested `{residue_idx, mut_aa}`:
 
@@ -218,7 +218,7 @@ serves for every requested `{residue_idx, mut_aa}`:
    `POST /api/predict`.
 
 So the UI exposes the structure-aware GNN baseline row from the
-benchmark, on top of MAVE ground truth. The withheld Our Model is
+benchmark, on top of MAVE ground truth. The withheld Enigma model is
 summarised in the benchmark table only — it is not serving live
 predictions in the demo.
 

@@ -9,13 +9,69 @@ TP53** against a 1,157-mutation MAVE (MaveDB) dataset. This repository ships:
   how much each feature brings.
 - Feature-augmented GNN variants (MSA **entropy**, **DCA** couplings,
   **NeRF** structural features).
-- **"Our Model"**, an internal architecture that is **intentionally
+- **"Enigma model"**, an internal architecture that is **intentionally
   withheld** from this repo; only its CV score is published.
 - A **WebGL 3D viewer** with a live **FastAPI prediction server** for
   interactive mutation exploration from any device on the same Wi-Fi.
 
 Full analytic write-up is in [REPORT.md](REPORT.md). This README is the
 how-to.
+
+---
+
+## Goal
+
+Take a single point mutation in the TP53 tumour-suppressor protein —
+e.g. *R175H* — and predict **how much function it destroys**, on a
+continuous scale that aligns with the experimental MAVE measurements. A
+good predictor lets a clinician or biologist triage tens of thousands of
+unseen variants without running a wet-lab assay on each one.
+
+We benchmark every model on the **same 1,157-mutation MAVE panel** with
+the **same 5-fold cross-validation protocol**, so the numbers are
+directly comparable.
+
+## Novelty
+
+Most TP53 variant-effect predictors are **sequence-only** — they hand a
+mutated amino-acid string to a protein language model (ESM, ESM-2,
+ProtBERT, …) and read out a score. Sequence models are good, but they
+have no idea that residue 175 is *physically next to* residue 248 in the
+folded DNA-binding domain — they only see the linear chain.
+
+Our contribution:
+
+1. **Structure-aware graph.** We turn the TP53 PDB into a kNN graph over
+   Cα atoms (k = 16) and run a GCN on top of the per-residue ESM-2
+   embeddings. The network can now propagate information *through 3D
+   space*, not just along the sequence.
+2. **Honest, leak-free benchmarking.** Most public benchmarks early-stop
+   on the test fold — which silently inflates the headline number. We
+   carve a 15 % validation slice out of every training fold and never
+   touch the test fold during model selection. After fixing this,
+   every trainable row drops 0.03–0.06 ρ (small, symmetric, expected),
+   and the published numbers can be trusted.
+3. **Feature-ablation panel.** We don't just publish "GNN beat
+   sequence." We layer MSA entropy, mean-field DCA couplings, and NeRF
+   structural features one at a time — so it's clear that the *base*
+   structure-aware GNN is what carries the result.
+4. **Live demo, not a static leaderboard.** A FastAPI server backs a
+   Three.js + WebGL viewer that streams predictions for any
+   user-selected mutation in real time, on any phone or laptop on the
+   same Wi-Fi.
+
+## How we achieved it
+
+| Stage | What we did |
+|-------|-------------|
+| **Inputs**  | TP53 PDB → CA coordinates; ESM-2 (`esm2_t6_8M_UR50D`, *frozen*) → per-residue 320-dim embedding; MaveDB → 1,157 measured single-mutation scores. |
+| **Graph**   | kNN(k=16) over CA → undirected edge list, plus optional MSA-derived edge weights (mean-field DCA). |
+| **Model**   | GCN backbone (Kipf-style) over the residue graph, followed by a small mutation head that takes (wild-type residue embedding, mutant identity, residue context). |
+| **Variants**| `+ Entropy` (Shannon column entropy from MSA), `+ Entropy + DCA` (couplings as edge features), `+ NeRF` (structural embeddings from a small radiance-field-style model). |
+| **Eval**    | 5-fold CV over the mutation list, internal 15 % val split per fold, Spearman ρ on the held-out fold, mean ± std across folds. |
+| **Demo**    | `export_webgl.py` bakes structure + embedding + scores into `webgl/data.json`; `serve.py` wraps the trained model behind a small FastAPI surface; the WebGL viewer is the front-end. |
+
+![Benchmark](figures/benchmark.png)
 
 ---
 
@@ -39,13 +95,13 @@ Pre-fix / post-fix comparison (fairness fix is described in §4):
 | GNN + Entropy                    | 0.6400 ± 0.068 | **0.5912 ± 0.056** |
 | GNN + Entropy + DCA              | 0.6404 ± 0.067 | **0.5856 ± 0.076** |
 | GNN + NeRF Features              | 0.6385 ± 0.059 | **0.5916 ± 0.083** |
-| **Our Model (withheld)**         | 0.6220 ± 0.055 | **0.6220 ± 0.055** *(no change — same protocol)* |
+| **Enigma model (withheld)**         | 0.6220 ± 0.055 | **0.6220 ± 0.055** *(no change — same protocol)* |
 
-After the fairness fix **Our Model sits at the top** of the honest
+After the fairness fix **Enigma model sits at the top** of the honest
 comparison. Every trainable row lost 0.03–0.06 — small, within each
 row's reported std, consistent across rows — which is the signature of
 removing a *small, symmetric* bias rather than a big methodological
-bug. The ridge baseline and Our Model are untouched because neither was
+bug. The ridge baseline and Enigma model are untouched because neither was
 doing test-fold early stopping in the first place.
 
 ## 2. Setup
@@ -214,8 +270,8 @@ residues.
 
 ---
 
-> **Note.** The architecture of "Our Model" is intentionally withheld
+> **Note.** The architecture of "Enigma model" is intentionally withheld
 > from this repo. Only its CV result JSON
-> ([checkpoints/our_model_cv_result.json](checkpoints/our_model_cv_result.json))
+> ([checkpoints/enigma_cv_result.json](checkpoints/enigma_cv_result.json))
 > is published; the number was measured with the same 5-fold protocol
 > as the other rows.

@@ -37,9 +37,27 @@ const mutationCart = new Map();
 let cartMulti = null;
 let apiAvailable = false;
 
-const rendererStruct = new THREE.WebGLRenderer({ canvas: canvasStruct, antialias: true });
-const rendererEmbed = new THREE.WebGLRenderer({ canvas: canvasEmbed, antialias: true });
-const rendererResidue = new THREE.WebGLRenderer({ canvas: canvasResidue, antialias: true });
+function makeRenderer(canvas) {
+  const opts = { canvas, failIfMajorPerformanceCaveat: false, powerPreference: "default" };
+  try {
+    return new THREE.WebGLRenderer({ ...opts, antialias: true });
+  } catch (e) {
+    console.warn("antialias WebGL failed, retrying without it:", e);
+    try {
+      return new THREE.WebGLRenderer({ ...opts, antialias: false });
+    } catch (e2) {
+      throw new Error(
+        "Your browser cannot create a WebGL context on this machine.\n" +
+        "Try: chrome://settings/system → enable hardware acceleration → Relaunch,\n" +
+        "or open this page in Firefox.\nOriginal error: " + (e2 && e2.message || e2)
+      );
+    }
+  }
+}
+
+const rendererStruct = makeRenderer(canvasStruct);
+const rendererEmbed = makeRenderer(canvasEmbed);
+const rendererResidue = makeRenderer(canvasResidue);
 
 rendererStruct.setPixelRatio(window.devicePixelRatio);
 rendererEmbed.setPixelRatio(window.devicePixelRatio);
@@ -533,7 +551,13 @@ function updateMutationCard(idx, mut) {
     riskLabel.textContent = "Unknown impact";
     riskLabel.style.color = "#9fb0dd";
     riskFill.style.width = "0%";
-    riskMeta.textContent = "No measured or trustworthy predicted score available.";
+    const measuredHere = AA20.filter((aa) => dataCache.mutMap.has(`${idx}:${aa}`));
+    if (measuredHere.length > 0) {
+      riskMeta.textContent =
+        `Not in the 1,157-mutation experiment. Measured at this residue: ${measuredHere.join(", ")}`;
+    } else {
+      riskMeta.textContent = "No measured or trustworthy predicted score available at this residue.";
+    }
     return;
   }
 
@@ -814,8 +838,14 @@ function initInspector(data) {
     });
   }
 
+  function measuredAAsAt(idx) {
+    return AA20.filter((aa) => dataCache.mutMap.has(`${idx}:${aa}`));
+  }
+
+  const residuesWithData = data.residues.filter((r) => measuredAAsAt(r.idx).length > 0);
+
   residueSelect.innerHTML = "";
-  data.residues.forEach((r) => {
+  residuesWithData.forEach((r) => {
     const opt = document.createElement("option");
     const aa3 = AA3[r.aa] || r.aa;
     opt.value = r.idx;
@@ -823,19 +853,23 @@ function initInspector(data) {
     residueSelect.appendChild(opt);
   });
 
-  mutAA.innerHTML = "";
-  AA20.forEach((aa) => {
-    const opt = document.createElement("option");
-    opt.value = aa;
-    opt.textContent = aa;
-    mutAA.appendChild(opt);
-  });
+  function rebuildMutAA(idx) {
+    mutAA.innerHTML = "";
+    measuredAAsAt(idx).forEach((aa) => {
+      const opt = document.createElement("option");
+      opt.value = aa;
+      opt.textContent = aa;
+      mutAA.appendChild(opt);
+    });
+  }
 
-  const startIdx = data.mut ?? 0;
+  const defaultIdx = data.mut ?? 0;
+  const startRes =
+    residuesWithData.find((r) => r.idx === defaultIdx) || residuesWithData[0];
+  const startIdx = startRes.idx;
   residueSelect.value = String(startIdx);
-  const res = data.residues.find((r) => r.idx === startIdx) || data.residues[0];
-  wtAA.value = res.aa;
-  mutAA.value = res.aa;
+  wtAA.value = startRes.aa;
+  rebuildMutAA(startIdx);
 
   updateHighlights(startIdx);
   updateResidueView(startIdx);
@@ -846,7 +880,7 @@ function initInspector(data) {
     const r = data.residues.find((rr) => rr.idx === idx);
     if (r) {
       wtAA.value = r.aa;
-      mutAA.value = r.aa;
+      rebuildMutAA(idx);
     }
     updateHighlights(idx);
     updateResidueView(idx);
@@ -1015,9 +1049,20 @@ resetBtn.addEventListener('click', () => {
 
 window.addEventListener('resize', resize);
 
+function showFatal(err) {
+  console.error(err);
+  const banner = document.createElement('div');
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;padding:10px 14px;background:#3a0d0d;color:#ffb4b4;font:13px/1.4 monospace;z-index:9999;white-space:pre-wrap;border-bottom:2px solid #ff5c5c;";
+  banner.textContent = "UI error: " + (err && err.stack || err);
+  document.body.appendChild(banner);
+}
+
 detectApi().finally(() => {
   loadData().then(() => {
     resize();
     animate();
-  });
+  }).catch(showFatal);
 });
+
+window.addEventListener('error', (e) => showFatal(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => showFatal(e.reason));
